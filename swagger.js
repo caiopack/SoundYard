@@ -6,19 +6,31 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "API de Produtos - SoundYard",
+      title: "SoundYard API",
       version: "1.0.0",
-      description: "Documentação da API de gerenciamento de músicas.",
+      description: "Documentação da API do SoundYard para gerenciamento de músicas e playlists.",
     },
     servers: [
       {
         url: `http://localhost:${PORT}`,
-        description: "Servidor de Desenvolvimento",
+        description: "Servidor de Desenvolvimento"
       },
     ],
-    // REMOVE completamente securitySchemes e security
+    components: {
+      securitySchemes: {
+        bearerAuth: {          
+          type: "http",
+          scheme: "bearer",
+        }
+      }
+    },
+    security: [
+      {
+        bearerAuth: []         
+      }
+    ]
   },
-  apis: ["./routes/*.js"], // seu arquivo de rotas
+  apis: ["./routes/*.js"],
 };
 
 const specs = swaggerJsdoc(options);

@@ -1,10 +1,9 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../utils/db.js';
+import authMiddleware from '../middleware/auth.js';
 
 const router = express.Router();
-
-// --- ROTAS DE CONSULTA ---
 
 /**
  * @openapi
@@ -13,71 +12,58 @@ const router = express.Router();
  *     summary: Lista todos os artistas
  *     tags:
  *       - SoundYard - Consultas
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de artistas
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   nome:
- *                     type: string
  */
-router.get('/artistas', async (req, res) => {
+router.get('/artistas', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM artistas');
     res.json(rows);
   } catch (err) {
-    console.error('Erro ao buscar artistas:', err);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
 /**
  * @openapi
- * /soundyard/artistas/{id}/albuns:
+ * /soundyard/artistas/albuns:
  *   get:
- *     summary: Lista todos os álbuns de um artista
+ *     summary: Lista todos os álbuns de um artista pelo nome
  *     tags:
  *       - SoundYard - Consultas
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - in: query
+ *         name: nome
  *         required: true
  *         schema:
  *           type: string
- *         description: ID do artista
+ *         description: Nome do artista
  *     responses:
  *       200:
  *         description: Lista de álbuns do artista
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   titulo:
- *                     type: string
  */
-router.get('/artistas/:id/albuns', async (req, res) => {
+router.get('/artistas/albuns', authMiddleware, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM albuns WHERE artista_id = ?', [req.params.id]);
+    const { nome } = req.query;
+    if (!nome) return res.status(400).json({ error: 'O nome do artista é obrigatório' });
+
+    const [rows] = await pool.query(`
+      SELECT a.id, a.titulo, a.ano, ar.nome AS artista
+      FROM albuns a
+      JOIN artistas ar ON a.artista_id = ar.id
+      WHERE LOWER(ar.nome) LIKE LOWER(?)
+    `, [`%${nome}%`]);
+
     res.json(rows);
   } catch (err) {
-    console.error('Erro ao buscar álbuns:', err);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
-
-// --- ROTAS DE PLAYLISTS ---
 
 /**
  * @openapi
@@ -86,6 +72,8 @@ router.get('/artistas/:id/albuns', async (req, res) => {
  *     summary: Cria uma nova playlist
  *     tags:
  *       - SoundYard - Playlists
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -99,21 +87,8 @@ router.get('/artistas/:id/albuns', async (req, res) => {
  *     responses:
  *       201:
  *         description: Playlist criada com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                 nome:
- *                   type: string
- *                 musicas:
- *                   type: array
- *                   items:
- *                     type: object
  */
-router.post('/playlists', async (req, res) => {
+router.post('/playlists', authMiddleware, async (req, res) => {
   try {
     const { nome } = req.body;
     if (!nome) return res.status(400).json({ error: 'O nome da playlist é obrigatório' });
@@ -122,7 +97,6 @@ router.post('/playlists', async (req, res) => {
     await pool.query('INSERT INTO playlists (id, nome) VALUES (?, ?)', [id, nome]);
     res.status(201).json({ id, nome, musicas: [] });
   } catch (err) {
-    console.error('Erro ao criar playlist:', err);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
@@ -134,36 +108,18 @@ router.post('/playlists', async (req, res) => {
  *     summary: Lista todas as playlists com suas músicas
  *     tags:
  *       - SoundYard - Playlists
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Lista de playlists
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   nome:
- *                     type: string
- *                   musicas:
- *                     type: array
- *                     items:
- *                       type: object
- *                       properties:
- *                         id:
- *                           type: string
- *                         titulo:
- *                           type: string
  */
-router.get('/playlists', async (req, res) => {
+router.get('/playlists', authMiddleware, async (req, res) => {
   try {
     const [playlists] = await pool.query('SELECT * FROM playlists');
     for (const playlist of playlists) {
       const [musicas] = await pool.query(`
-        SELECT m.id, m.titulo 
+        SELECT m.titulo AS musica
         FROM musicas m
         JOIN playlist_musicas pm ON m.id = pm.musica_id
         WHERE pm.playlist_id = ?
@@ -172,25 +128,19 @@ router.get('/playlists', async (req, res) => {
     }
     res.json(playlists);
   } catch (err) {
-    console.error('Erro ao listar playlists:', err);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
 /**
  * @openapi
- * /soundyard/playlists/{id}/musicas:
+ * /soundyard/playlists/musicas:
  *   post:
- *     summary: Adiciona uma música a uma playlist
+ *     summary: Adiciona uma música a uma playlist pesquisando pelo nome
  *     tags:
  *       - SoundYard - Playlists
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: ID da playlist
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -198,31 +148,31 @@ router.get('/playlists', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               musica_id:
+ *               nome_playlist:
  *                 type: string
- *                 example: "e5f6a7b8-c9d0-1234-5678-90abcdef1234"
+ *                 example: Minhas Músicas de Rock
+ *               nome_musica:
+ *                 type: string
+ *                 example: Bohemian Rhapsody
  *     responses:
  *       201:
  *         description: Música adicionada com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Música adicionada com sucesso!
  */
-router.post('/playlists/:id/musicas', async (req, res) => {
+router.post('/playlists/musicas', authMiddleware, async (req, res) => {
   try {
-    const { musica_id } = req.body;
-    const playlist_id = req.params.id;
-    if (!musica_id) return res.status(400).json({ error: 'O ID da música (musica_id) é obrigatório' });
+    const { nome_playlist, nome_musica } = req.body;
+    if (!nome_playlist || !nome_musica) return res.status(400).json({ error: 'O nome da playlist e da música são obrigatórios' });
 
-    await pool.query('INSERT INTO playlist_musicas (playlist_id, musica_id) VALUES (?, ?)', [playlist_id, musica_id]);
+    const [playlistRows] = await pool.query('SELECT id FROM playlists WHERE LOWER(nome) LIKE LOWER(?)', [`%${nome_playlist}%`]);
+    if (playlistRows.length === 0) return res.status(404).json({ error: 'Playlist não encontrada' });
+
+    const [musicaRows] = await pool.query('SELECT id FROM musicas WHERE LOWER(titulo) LIKE LOWER(?)', [`%${nome_musica}%`]);
+    if (musicaRows.length === 0) return res.status(404).json({ error: 'Música não encontrada' });
+
+    await pool.query('INSERT INTO playlist_musicas (playlist_id, musica_id) VALUES (?, ?)', [playlistRows[0].id, musicaRows[0].id]);
+
     res.status(201).json({ message: 'Música adicionada com sucesso!' });
   } catch (err) {
-    console.error('Erro ao adicionar música:', err);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
