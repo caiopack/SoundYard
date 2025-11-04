@@ -69,30 +69,28 @@ btnCriarPlaylist.onclick = async () => {
   const data = await res.json();
   mostrarResultado(data);
 
-  // Atualizar lista
   btnListarPlaylists.click();
 };
 
-// ====== ADICIONAR MÚSICA À PLAYLIST ======
+// ====== ADICIONAR MÚSICA À PLAYLIST (AGORA VIA IDs) ======
 btnAdicionarMusica.onclick = async () => {
-  const playlist_id = document.getElementById('selectPlaylist').value;
-const musica_id = document.getElementById('selectMusica').value;
+  const playlist_id = selectPlaylist.value;
+  const musica_id = selectMusica.value;
 
-if (!playlist_id || !musica_id) return alert('Escolha playlist e música.');
-
-fetchAPI('/playlists/musicas', { 
-    method: 'POST',
-    body: JSON.stringify({ playlist_id, musica_id }) 
-});
-
+  if (!playlist_id || !musica_id) {
+    return alert("Escolha playlist e música.");
+  }
 
   const res = await fetch(`${API_URL}/playlists/musicas`, {
     method: "POST",
     headers: getHeaders(),
-    body: JSON.stringify({ nome_playlist, nome_musica })
+    body: JSON.stringify({ playlist_id, musica_id })
   });
 
-  mostrarResultado(await res.json());
+  const data = await res.json();
+  mostrarResultado(data);
+
+  btnListarPlaylists.click();
 };
 
 // ====== Preencher selects ======
@@ -100,7 +98,7 @@ function preencherSelectPlaylists(playlists) {
   selectPlaylist.innerHTML = `<option value="">Selecione uma Playlist</option>`;
   playlists.forEach(p => {
     const opt = document.createElement("option");
-    opt.value = p.nome;
+    opt.value = p.id;          // agora usa ID
     opt.textContent = p.nome;
     selectPlaylist.appendChild(opt);
   });
@@ -110,7 +108,7 @@ function preencherSelectMusicas(musicas) {
   selectMusica.innerHTML = `<option value="">Selecione uma Música</option>`;
   musicas.forEach(m => {
     const opt = document.createElement("option");
-    opt.value = m.titulo;
+    opt.value = m.id;         // agora usa ID
     opt.textContent = m.titulo;
     selectMusica.appendChild(opt);
   });
