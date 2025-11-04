@@ -67,6 +67,28 @@ router.get('/artistas/albuns', authMiddleware, async (req, res) => {
 
 /**
  * @openapi
+ * /soundyard/musicas:
+ *   get:
+ *     summary: Lista todas as músicas
+ *     tags:
+ *       - SoundYard - Consultas
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de músicas
+ */
+router.get('/musicas', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM musicas');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro interno no servidor' });
+  }
+});
+
+/**
+ * @openapi
  * /soundyard/playlists:
  *   post:
  *     summary: Cria uma nova playlist
