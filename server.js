@@ -5,8 +5,10 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import soundYardRoutes from './routes/soundYard.js';
 import authMiddleware from './middleware/auth.js';
 
+
 const app = express();
 app.use(express.json());
+app.use(express.static('public'));
 
 // --- Swagger ---
 const swaggerOptions = {
