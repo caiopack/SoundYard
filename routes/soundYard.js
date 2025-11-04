@@ -80,7 +80,7 @@ router.get('/artistas/albuns', authMiddleware, async (req, res) => {
  */
 router.get('/musicas', authMiddleware, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM musicas');
+    const [rows] = await pool.query('SELECT id, titulo FROM musicas');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Erro interno no servidor' });
@@ -138,21 +138,25 @@ router.post('/playlists', authMiddleware, async (req, res) => {
  */
 router.get('/playlists', authMiddleware, async (req, res) => {
   try {
-    const [playlists] = await pool.query('SELECT * FROM playlists');
+    const [playlists] = await pool.query('SELECT id, nome FROM playlists');
+
     for (const playlist of playlists) {
       const [musicas] = await pool.query(`
-        SELECT m.titulo AS musica
+        SELECT m.id, m.titulo
         FROM musicas m
         JOIN playlist_musicas pm ON m.id = pm.musica_id
         WHERE pm.playlist_id = ?
       `, [playlist.id]);
+
       playlist.musicas = musicas;
     }
+
     res.json(playlists);
   } catch (err) {
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
+
 
 /**
  * @openapi
@@ -182,21 +186,22 @@ router.get('/playlists', authMiddleware, async (req, res) => {
  */
 router.post('/playlists/musicas', authMiddleware, async (req, res) => {
   try {
-    const { nome_playlist, nome_musica } = req.body;
-    if (!nome_playlist || !nome_musica) return res.status(400).json({ error: 'O nome da playlist e da música são obrigatórios' });
+    const { playlist_id, musica_id } = req.body;
 
-    const [playlistRows] = await pool.query('SELECT id FROM playlists WHERE LOWER(nome) LIKE LOWER(?)', [`%${nome_playlist}%`]);
-    if (playlistRows.length === 0) return res.status(404).json({ error: 'Playlist não encontrada' });
+    if (!playlist_id || !musica_id) {
+      return res.status(400).json({ error: 'playlist_id e musica_id são obrigatórios' });
+    }
 
-    const [musicaRows] = await pool.query('SELECT id FROM musicas WHERE LOWER(titulo) LIKE LOWER(?)', [`%${nome_musica}%`]);
-    if (musicaRows.length === 0) return res.status(404).json({ error: 'Música não encontrada' });
-
-    await pool.query('INSERT INTO playlist_musicas (playlist_id, musica_id) VALUES (?, ?)', [playlistRows[0].id, musicaRows[0].id]);
+    await pool.query(
+      'INSERT INTO playlist_musicas (playlist_id, musica_id) VALUES (?, ?)',
+      [playlist_id, musica_id]
+    );
 
     res.status(201).json({ message: 'Música adicionada com sucesso!' });
   } catch (err) {
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
+
 
 export default router;
