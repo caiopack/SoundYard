@@ -1,12 +1,6 @@
 :root {
     --primary-color: #4a69bd;
     --primary-hover: #3c5aa6;
-    --secondary-color: #6c757d;
-    --secondary-hover: #5a6268;
-    --success-color: #28a745;
-    --success-hover: #218838;
-    --danger-color: #dc3545;
-    --danger-hover: #c82333;
     --light-gray: #f8f9fa;
     --medium-gray: #dee2e6;
     --dark-gray: #343a40;
@@ -95,20 +89,13 @@ button {
     font-weight: 600;
     border: none;
     color: var(--white);
+    background-color: var(--primary-color);
     transition: all 0.2s ease-in-out;
 }
 
-.btn-primary { background-color: var(--primary-color); }
-.btn-primary:hover { background-color: var(--primary-hover); }
-
-.btn-secondary { background-color: var(--secondary-color); }
-.btn-secondary:hover { background-color: var(--secondary-hover); }
-
-.btn-success { background-color: var(--success-color); }
-.btn-success:hover { background-color: var(--success-hover); }
-
-.btn-danger { background-color: var(--danger-color); }
-.btn-danger:hover { background-color: var(--danger-hover); }
+button:hover {
+    background-color: var(--primary-hover);
+}
 
 pre#resultado {
     background-color: var(--dark-gray);
