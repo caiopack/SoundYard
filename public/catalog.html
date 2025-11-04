@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SoundYard — Catálogo</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>🎧 SoundYard — Catálogo</h1>
+    <div class="nav">
+      <a href="/explore.html">Explorar</a>
+      <a href="/playlists.html">Minhas Playlists</a>
+      <button id="btnLogout" class="btn ghost" style="display:none;">Sair</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="row" style="margin-bottom:14px;">
+      <div class="search-wrap">
+        <input id="searchArtist" class="search-input" placeholder="Buscar artista..." autocomplete="off" />
+      </div>
+      <button id="btnFind" class="btn primary" data-label="Buscar">Buscar</button>
+      <div class="space"></div>
+      <select id="myPlaylistSelect" style="max-width:260px; display:none;"></select>
+    </div>
+
+    <div class="grid-two">
+      <section class="card">
+        <h2 class="h2">Artistas</h2>
+        <ul id="artistsList"></ul>
+      </section>
+
+      <section class="card">
+        <h2 class="h2" id="rightTitle">Álbuns & Faixas</h2>
+        <div id="rightBody" class="grid-split">
+          <div>
+            <h3 class="h3">Álbuns</h3>
+            <ul id="albumsList"></ul>
+          </div>
+          <div>
+            <h3 class="h3">Faixas</h3>
+            <ul id="tracksList"></ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal para faixa -->
+  <div id="modalOverlay" style="display:none; position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.55);">
+    <div class="card" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(640px,92vw);">
+      <div class="row" style="justify-content:space-between; margin-bottom:8px;">
+        <h2 class="h2" id="modalTitle">Faixa</h2>
+        <button id="modalClose" class="btn ghost">Fechar</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="/js/config.js"></script>
+  <script type="module" src="/js/supabaseClient.js"></script>
+  <script type="module">
+  import { supa, getAccessToken } from './js/supabaseClient.js';
+
+  const $ = (s) => document.querySelector(s);
+  const artistsList = $('#artistsList');
+  const albumsList  = $('#albumsList');
+  const tracksList  = $('#tracksList');
+  const rightTitle  = $('#rightTitle');
+
+  const searchArtist = $('#searchArtist');
+  const btnFind      = $('#btnFind');
+
+  const myPlaylistSelect = $('#myPlaylistSelect');
+  const btnLogout        = $('#btnLogout');
+
+  // modal
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalTitle   = document.getElementById('modalTitle');
+  const modalBody    = document.getElementById('modalBody');
+  const modalClose   = document.getElementById('modalClose');
+
+  let token = null;
+  let session = null;
+
+  function openModal(title, html) {
+    modalTitle.textContent = title;
+    modalBody.innerHTML = html;
+    modalOverlay.style.display = 'block';
+  }
+  function closeModal(){ modalOverlay.style.display = 'none'; modalBody.innerHTML = ''; }
+  modalClose.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', (e)=>{ if (e.target === modalOverlay) closeModal(); });
+
+  function setLoading(btn, loading){
+    btn.disabled = !!loading;
+    const base = btn.getAttribute('data-label') || btn.textContent;
+    btn.textContent = loading ? 'Aguarde...' : base;
+  }
+
+  async function api(path, options = {}) {
+    const headers = { 'Content-Type':'application/json', ...(options.headers || {}) };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(path, { ...options, headers });
+    const txt = await res.text();
+    let data; try { data = txt ? JSON.parse(txt) : null; } catch { data = txt; }
+    if (!res.ok) {
+      console.error('API error', path, res.status, data);
+      throw new Error(typeof data === 'string' ? data : (data?.error || `Erro ${res.status}`));
+    }
+    return data;
+  }
+
+  // Tenta múltiplos caminhos até um retornar dados
+  async function tryMany(paths) {
+    for (const p of paths) {
+      try {
+        const data = await api(p);
+        // considera válido se array
+        if (Array.isArray(data)) return data;
+        if (data && typeof data === 'object') return data;
+      } catch (e) {
+        // segue pro próximo
+      }
+    }
+    throw new Error('Nenhum endpoint respondeu com dados.');
+  }
+
+  async function loadArtists(q=null){
+    const url = q ? `/catalog/artists?q=${encodeURIComponent(q)}` : '/catalog/artists';
+    const list = await api(url);
+    artistsList.innerHTML = '';
+    if (!list?.length) { artistsList.innerHTML = '<li class="muted">Nenhum artista.</li>'; return; }
+    list.forEach(a=>{
+      const li = document.createElement('li');
+      li.className = 'item';
+      li.textContent = a.name;
+      li.addEventListener('click', ()=> selectArtist(a.id, a.name));
+      artistsList.appendChild(li);
+    });
+  }
+
+  async function selectArtist(artistId, name){
+  rightTitle.textContent = `Álbuns & Faixas — ${name}`;
+
+  // Álbuns do artista
+  albumsList.innerHTML = '<li class="muted">Carregando álbuns…</li>';
+  try {
+    const albums = await tryMany([
+      `/catalog/artists/${artistId}/albums`,
+      `/catalog/artist/${artistId}/albums`,
+      `/catalog/albums?artist_id=${encodeURIComponent(artistId)}`
+    ]);
+    renderAlbums(albums);
+  } catch (e) {
+    console.error(e);
+    albumsList.innerHTML = '<li class="muted">Não foi possível carregar álbuns.</li>';
+  }
+
+  
+  tracksList.innerHTML = '<li class="muted">Selecione um álbum para ver as faixas.</li>';
+}
+
+
+  function renderAlbums(albums){
+    albumsList.innerHTML = '';
+    if (!albums?.length) { albumsList.innerHTML = '<li class="muted">Sem álbuns.</li>'; return; }
+    albums.forEach(al=>{
+      const li = document.createElement('li');
+      li.className='item';
+      li.textContent = al.title;
+      li.addEventListener('click', ()=> selectAlbum(al.id, al.title));
+      albumsList.appendChild(li);
+    });
+  }
+
+  async function selectAlbum(albumId, title){
+    rightTitle.textContent = `Álbuns & Faixas — ${title}`;
+    tracksList.innerHTML = '<li class="muted">Carregando...</li>';
+    try {
+      // /catalog/albums/:id/tracks  OU alternativa /catalog/album/:id/tracks
+      const tracks = await tryMany([
+        `/catalog/albums/${albumId}/tracks`,
+        `/catalog/album/${albumId}/tracks`,
+      ]);
+      renderTracks(tracks);
+    } catch (e) {
+      console.error(e);
+      tracksList.innerHTML = '<li class="muted">Não foi possível carregar faixas do álbum.</li>';
+    }
+  }
+
+  function renderTracks(tracks){
+    tracksList.innerHTML = '';
+    if (!tracks?.length) { tracksList.innerHTML = '<li class="muted">Sem faixas.</li>'; return; }
+    tracks.forEach(t=>{
+      const li = document.createElement('li');
+      li.className='track';
+      li.innerHTML = `
+        <div class="meta">
+          <strong>${t.title}</strong>
+          <small class="small">${t.duration_seconds ?? 0}s</small>
+        </div>
+        <button class="btn primary" data-id="${t.id}">Detalhes</button>
+      `;
+      li.querySelector('button').addEventListener('click', ()=> openTrackModal(t));
+      tracksList.appendChild(li);
+    });
+  }
+
+  async function openTrackModal(track){
+    const html = `
+      <p><strong>${track.title}</strong></p>
+      <p class="small">Duração: ${track.duration_seconds ?? 0}s</p>
+      ${session ? `
+        <div class="hr"></div>
+        <div class="row" style="gap:8px;">
+          <select id="plTarget" style="min-width:240px;"></select>
+          <input id="newPlName" placeholder="Nome da nova playlist" style="display:none; min-width:220px;" />
+        </div>
+        <div class="modal-actions">
+          <button id="btnAdd" class="btn primary">Adicionar</button>
+        </div>
+      ` : `<p class="small">Faça login para adicionar à sua playlist.</p>`}
+    `;
+    openModal('Música', html);
+
+    if (!session) return;
+
+    // carrega user's playlists
+    const mine = await api('/playlists/me/playlists');
+    const sel = document.getElementById('plTarget');
+    const input = document.getElementById('newPlName');
+    sel.innerHTML = `
+      ${mine.length ? `<option value="">— selecione —</option>` : ''}
+      ${mine.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}
+      <option value="__new__">➕ Criar nova…</option>
+    `;
+    if (!mine.length) { sel.value='__new__'; input.style.display='block'; }
+    sel.addEventListener('change', ()=> { input.style.display = (sel.value==='__new__') ? 'block' : 'none'; });
+
+    document.getElementById('btnAdd').addEventListener('click', async () => {
+      try {
+        document.getElementById('btnAdd').disabled = true;
+        if (sel.value === '__new__') {
+          const name = input.value.trim();
+          if (!name) { alert('Digite um nome.'); document.getElementById('btnAdd').disabled=false; return; }
+          const created = await api('/playlists/me/playlists', { method:'POST', body: JSON.stringify({ name })});
+          const plId = created?.id || created;
+          await api(`/playlists/me/playlists/${plId}/tracks`, { method:'POST', body: JSON.stringify({ track_id: track.id })});
+        } else if (sel.value) {
+          await api(`/playlists/me/playlists/${sel.value}/tracks`, { method:'POST', body: JSON.stringify({ track_id: track.id })});
+        } else {
+          alert('Selecione uma playlist.');
+          document.getElementById('btnAdd').disabled=false;
+          return;
+        }
+        closeModal();
+      } catch (e) {
+        alert(e.message);
+        document.getElementById('btnAdd').disabled=false;
+      }
+    });
+  }
+
+  // buscas
+  btnFind.addEventListener('click', async ()=>{
+    const q = searchArtist.value.trim();
+    try {
+      setLoading(btnFind, true);
+      await loadArtists(q || null);
+    } finally {
+      setLoading(btnFind, false);
+    }
+  });
+
+  // init
+  (async function init(){
+    const { data } = await supa.auth.getSession();
+    session = data.session || null;
+    if (session) {
+      token = await getAccessToken();
+      btnLogout.style.display='inline-block';
+      const mine = await api('/playlists/me/playlists');
+  
+    }
+
+    // carrega artistas e, se vier ?artist_id=, abre direto
+    await loadArtists();
+    const params = new URLSearchParams(window.location.search);
+    const artistId = params.get('artist_id');
+    if (artistId) {
+      // tenta obter o nome via uma chamada simples se existir
+      try {
+        await selectArtist(artistId, 'Artista');
+      } catch {}
+    }
+  })();
+
+  btnLogout.addEventListener('click', async ()=>{
+    await supa.auth.signOut();
+    window.location.href = '/';
+  });
+</script>
+
+</body>
+</html>

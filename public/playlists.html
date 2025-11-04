@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SoundYard — Minhas Playlists</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="header">
+    <h1>🎧 SoundYard — Minhas Playlists</h1>
+    <div class="nav">
+      <a href="/catalog.html">Catálogo</a>
+      <a href="/explore.html">Explorar</a>
+      <button id="btnLogout" class="btn ghost" data-label="Sair">Sair</button>
+    </div>
+  </header>
+
+  <main class="container">
+  <!-- CONTROLES TOP -->
+  <div class="row" style="margin-bottom:14px;">
+    <form id="createForm" class="row" style="min-width:280px;">
+      <input id="playlistName" placeholder="Nova playlist..." />
+      <button type="submit" class="btn primary" data-label="Criar">Criar</button>
+    </form>
+
+    <div class="space"></div>
+
+    <!-- Busca com popover -->
+    <div class="search-wrap">
+      <input id="searchInput" class="search-input" placeholder="Buscar (música, artista, playlist)..." autocomplete="off" />
+      <div id="searchPopover" class="search-popover" role="listbox" aria-label="Resultados de busca"></div>
+    </div>
+
+    <button id="btnSearch" class="btn primary" data-label="Buscar">Buscar</button>
+  </div>
+
+  <!-- GRID PRINCIPAL -->
+  <div class="grid-two">
+    <!-- Lado Esquerdo: minhas playlists -->
+    <section class="card">
+      <h2 class="h2">Minhas Playlists</h2>
+      <ul id="myPlaylists"></ul>
+    </section>
+
+    <!-- Lado Direito: editor -->
+    <section class="card">
+      <div class="row" style="margin-bottom:8px;">
+        <h2 id="editorTitle" class="h2">Editor</h2>
+        <div class="row">
+          <button id="btnExport"   class="btn ok"      data-label="Exportar"      disabled>Exportar</button>
+          <button id="btnTogglePub"class="btn primary" data-label="Publicar"      disabled>Publicar</button>
+          <button id="btnDelete"   class="btn danger"  data-label="Excluir"       disabled>Excluir</button>
+        </div>
+      </div>
+      <div id="editorBody">
+        <p class="muted">Selecione uma playlist para editar.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- MODAL -->
+<div id="modalOverlay" style="display:none; position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.55);">
+  <div id="modalCard" class="card" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(720px,92vw); max-height:80vh; overflow:auto;">
+    <div class="row" style="justify-content:space-between; margin-bottom:8px;">
+      <h2 id="modalTitle" class="h2">Detalhes</h2>
+      <button id="modalClose" class="btn ghost">Fechar</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+
+  <!-- Scripts -->
+  <script src="/js/config.js"></script>
+  <script type="module" src="/js/supabaseClient.js"></script>
+  <script type="module" src="/js/playlists.js"></script>
+</body>
+</html>
