@@ -3,76 +3,80 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Teste API SoundYard</title>
+    <title>SoundYard API</title>
     <link rel="stylesheet" href="styles/menu.css" />
   </head>
   <body>
-    <div class="container">
-      <h1>Interface de Teste - API SoundYard</h1>
+    <header class="main-header">
+      <h1>SoundYard</h1>
+    </header>
 
-      <section>
-        <h2>Autenticação</h2>
-        <div class="form-group">
-          <input type="text" id="apiKey" placeholder="Token JWT" />
-        </div>
-      </section>
+    <main>
+      <div class="container">
+        <section>
+          <h2>Autenticação</h2>
+          <div class="form-group">
+            <input type="text" id="apiKey"/>
+          </div>
+        </section>
 
-      <section>
-        <h2>Consultas</h2>
-        <div class="form-group-inline">
-          <label for="nomeArtistaAlbuns">Nome do Artista:</label>
-          <input
-            type="text"
-            id="nomeArtistaAlbuns"
-            placeholder="Digite o nome do artista"
-          />
-        </div>
-        <div class="action-group">
-          <button id="btnListarArtistas" class="btn btn-primary">
-            Listar Artistas
-          </button>
-          <button id="btnListarAlbuns" class="btn btn-primary">
-            Listar Álbuns
-          </button>
-          <button id="btnListarPlaylists" class="btn btn-secondary">
-            Listar Playlists
-          </button>
-          <button id="btnListarMusicas" class="btn btn-success">
-            Listar Músicas
-          </button>
-        </div>
-      </section>
+        <section>
+          <h2>Consultas</h2>
+          <div class="form-group-inline">
+            <label for="nomeArtistaAlbuns">Nome do Artista:</label>
+            <input
+              type="text"
+              id="nomeArtistaAlbuns"
+              placeholder="Digite o nome do artista"
+            />
+          </div>
+          <div class="action-group">
+            <button id="btnListarArtistas" class="btn btn-secondary">
+              Listar Artistas
+            </button>
+            <button id="btnListarAlbuns" class="btn btn-secondary">
+              Listar Álbuns
+            </button>
+            <button id="btnListarPlaylists" class="btn btn-secondary">
+              Listar Playlists
+            </button>
+            <button id="btnListarMusicas" class="btn btn-secondary">
+              Listar Músicas
+            </button>
+          </div>
+        </section>
 
-      <section>
-        <h2>Playlists</h2>
-        <div class="action-group">
-          <input type="text" id="playlistNome" placeholder="Nova Playlist" />
-          <button id="btnCriarPlaylist" class="btn btn-success">
-            Criar Playlist
-          </button>
-        </div>
+        <section>
+          <h2>Playlists</h2>
+          <div class="action-group">
+            <input type="text" id="playlistNome" placeholder="Nova Playlist" />
+            <button id="btnCriarPlaylist" class="btn btn-primary">
+              Criar Playlist
+            </button>
+          </div>
 
-        <div class="action-group">
-          <select id="selectPlaylist">
-            <option value="">Selecione uma Playlist</option>
-          </select>
+          <div class="action-group">
+            <select id="selectPlaylist">
+              <option value="">Selecione uma Playlist</option>
+            </select>
 
-          <select id="selectMusica">
-            <option value="">Selecione uma Música</option>
-          </select>
+            <select id="selectMusica">
+              <option value="">Selecione uma Música</option>
+            </select>
 
-          <button id="btnAdicionarMusica" class="btn btn-success">
-            Adicionar Música
-          </button>
-        </div>
-      </section>
+            <button id="btnAdicionarMusica" class="btn btn-primary">
+              Adicionar Música
+            </button>
+          </div>
+        </section>
 
-      <section>
-        <h2>Resultados</h2>
-        <pre id="resultado">Olha aí</pre>
-      </section>
-    </div>
+        <section>
+          <h2>Resultados</h2>
+          <pre id="resultado">Aguardando comando...</pre>
+        </section>
+      </div>
+    </main>
 
     <script src="scripts/menu.js"></script>
-  </body>
+  </body>
 </html>

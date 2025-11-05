@@ -1,4 +1,3 @@
-// server.js
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
@@ -28,17 +27,15 @@ const swaggerOptions = {
         },
       },
     },
-    security: [], // <-- deixar vazio para Swagger não exigir token
+    security: [], 
   },
-  apis: ['./routes/*.js'], // procura pelos comentários @openapi
+  apis: ['./routes/*.js'], 
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// Rota do Swagger sem autenticação
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Rotas reais da API com autenticação
 app.use('/soundyard', authMiddleware, soundYardRoutes);
 
 const PORT = 3000;
