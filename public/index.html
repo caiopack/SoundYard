@@ -20,16 +20,23 @@
       <p class="muted" style="margin-top:0;">Use seu e-mail e senha para continuar.</p>
 
       <form id="loginForm" class="row" style="flex-direction:column; gap:10px;">
-        <input id="email" type="email" placeholder="E-mail" required />
-        <input id="password" type="password" placeholder="Senha" required />
+        <input id="email" type="email" class="input" placeholder="E-mail" required />
+        <input id="password" type="password" class="input" placeholder="Senha" required />
+
         <div class="row" style="gap:10px;">
           <button type="submit" class="btn primary" data-label="Entrar">Entrar</button>
-          <button type="button" id="goPlaylists" class="btn ghost">Ir para minhas playlists</button>
+          
         </div>
       </form>
 
       <div class="hr"></div>
-      <p class="small">Não tem conta? <a href="#" id="linkSignup">criar agora</a></p>
+
+      <p class="small">
+        Não tem conta?
+        <a href="/register.html" id="linkSignup">
+          Criar conta
+        </a>
+      </p>
     </section>
   </div>
 
@@ -37,8 +44,8 @@
   <script type="module" src="/js/supabaseClient.js"></script>
   <script type="module">
     import { supa } from './js/supabaseClient.js';
+
     const form = document.getElementById('loginForm');
-    const linkSignup = document.getElementById('linkSignup');
     const goPlaylists = document.getElementById('goPlaylists');
 
     function setLoading(btn, loading){
@@ -53,10 +60,13 @@
       const password = document.getElementById('password').value;
 
       const btn = form.querySelector('button[type="submit"]');
+
       try {
         setLoading(btn, true);
+
         const { error } = await supa.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
         window.location.href = '/playlists.html';
       } catch (err) {
         alert(err.message || 'Falha ao entrar.');
@@ -65,21 +75,9 @@
       }
     });
 
-    linkSignup.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const email = prompt('Seu e-mail:');
-      const password = prompt('Crie uma senha:');
-      if (!email || !password) return;
-      try {
-        const { error } = await supa.auth.signUp({ email, password });
-        if (error) throw error;
-        alert('Conta criada! Verifique seu e-mail (se necessário) e faça login.');
-      } catch (err) {
-        alert(err.message || 'Falha ao criar conta.');
-      }
-    });
-
-    goPlaylists.addEventListener('click', () => window.location.href = '/playlists.html');
+    goPlaylists.addEventListener('click', () =>
+      window.location.href = '/playlists.html'
+    );
   </script>
 </body>
 </html>
