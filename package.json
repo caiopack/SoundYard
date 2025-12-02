@@ -1,20 +1,30 @@
 {
   "name": "api_int",
   "version": "1.0.0",
-  "description": "",
+  "description": "API de integração de sistemas - Projeto de playlists",
   "main": "server.js",
   "type": "module",
   "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "express",
+    "supabase",
+    "api",
+    "integration",
+    "playlists",
+    "music"
+  ],
+  "author": "Raul Sampaio",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.78.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
-    "mysql2": "^3.14.5",
+    "morgan": "^1.10.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^13.0.0"
